@@ -327,11 +327,14 @@ invoked the current command"
     (when evil-this-register
       (evil-repeat-record
        `(set evil-this-register ,evil-this-register)))
-    (setq evil-repeat-keys (this-command-keys)))
+    (setq evil-repeat-keys (this-single-command-keys))
+    (when (and prefix-arg (where-is-internal 'universal-argument))
+      (setq evil-repeat-keys
+            (vconcat (car (where-is-internal 'universal-argument))
+                     (number-to-string prefix-arg)
+                     evil-repeat-keys))))
    ((eq flag 'post)
-    (evil-repeat-record (if (zerop (length (this-command-keys)))
-                            evil-repeat-keys
-                          (this-command-keys)))
+    (evil-repeat-record evil-repeat-keys)
     ;; erase commands keys to prevent double recording
     (evil-clear-command-keys))))
 
