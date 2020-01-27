@@ -1062,6 +1062,18 @@ mode, in which case `evil-define-minor-mode-key' is used."
                     ',(if (symbolp keymap) keymap 'keymap))))))
 (defalias 'evil-declare-key 'evil-define-key)
 
+(defun evil-bind-key (&rest body)
+  (let ((minor-mode nil))
+    (while (keywordp (car-safe body))
+      (let ((key (pop body)))
+        (cond
+         ((eq :minor-mode key)
+          (setq minor-mode (pop body)))
+         (t (error "evil-bind-key: unrecognized keyword %s" key)))))
+    (if minor-mode
+        (apply #'evil-define-minor-mode-key body)
+      (apply #'evil-define-key* body))))
+
 (defun evil-define-key* (state keymap key def &rest bindings)
   "Create a STATE binding from KEY to DEF for KEYMAP.
 STATE is one of normal, insert, visual, replace, operator,
