@@ -1061,18 +1061,50 @@ mode, in which case `evil-define-minor-mode-key' is used."
             (format "evil-define-key-in-%s"
                     ',(if (symbolp keymap) keymap 'keymap))))))
 (defalias 'evil-declare-key 'evil-define-key)
+(make-obsolete 'evil-define-key 'evil-bind-key "1.13.1")
+(make-obsolete 'evil-declare-key 'evil-bind-key "1.13.1")
 
-(defun evil-bind-key (&rest body)
-  (let ((minor-mode nil))
-    (while (keywordp (car-safe body))
-      (let ((key (pop body)))
-        (cond
-         ((eq :minor-mode key)
-          (setq minor-mode (pop body)))
-         (t (error "evil-bind-key: unrecognized keyword %s" key)))))
-    (if minor-mode
-        (apply #'evil-define-minor-mode-key body)
-      (apply #'evil-define-key* body))))
+(defun evil-bind-key (state keymap &rest body)
+  "Create a STATE binding from KEY to DEF for KEYMAP.
+STATE is one of `normal', `insert', `visual', `replace',
+`operator', `motion', `emacs', or a list of one or more of
+these.  Omitting a state by using `nil' corresponds to a standard
+Emacs binding using `define-key'.  The remaining arguments are
+like those of `define-key'. For example:
+
+    (evil-bind-key 'normal foo-map \"a\" 'bar)
+
+This creates a binding from `a' to `bar' in normal state, which
+is active whenever `foo-map' is active. Using nil for the state,
+the following lead to identical bindings:
+
+    (evil-define-key nil foo-map \"a\" 'bar)
+    (define-key foo-map \"a\" 'bar)
+
+It is possible to specify multiple states and/or bindings at
+once:
+
+    (evil-define-key '(normal visual) foo-map
+      \"a\" 'bar
+      \"b\" 'foo)
+
+KEYMAP may also be a quoted symbol. If the symbol is `global', the
+global evil keymap corresponding to the state(s) is used, meaning
+the following lead to identical bindings:
+
+    (evil-define-key 'normal 'global \"a\" 'bar)
+    (evil-global-set-key 'normal \"a\" 'bar)
+
+The symbol `local' may also be used, which corresponds to using
+`evil-local-set-key'. If a quoted symbol is used that is not
+`global' or `local', it is assumed to be the name of a minor
+mode, in which case `evil-define-minor-mode-key' is used.
+
+\(fn STATE KEYMAP KEY DEF &rest BINDINGS)"
+  (declare (indent defun))
+  (if (and (symbolp keymap) (not (memq keymap '(local global))))
+      (apply #'evil-define-minor-mode-key state keymap body)
+    (apply #'evil-define-key* state keymap body)))
 
 (defun evil-define-key* (state keymap key def &rest bindings)
   "Create a STATE binding from KEY to DEF for KEYMAP.
